@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Get orders list",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "orders": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new order",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "items": [
+          {"name": "Борщ", "quantity": 2, "price": 350}
+        ],
+        "total": 700
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "success": true,
+        "order_id": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

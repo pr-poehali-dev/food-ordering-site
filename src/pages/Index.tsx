@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import funcUrls from '../../backend/func2url.json';
 
 interface MenuItem {
   id: number;
@@ -18,10 +19,20 @@ interface CartItem extends MenuItem {
   quantity: number;
 }
 
+interface Order {
+  id: number;
+  items: CartItem[];
+  total: number;
+  status: string;
+  created_at: string;
+}
+
 const Index = () => {
   const [view, setView] = useState<'customer' | 'waiter'>('customer');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedPlate, setSelectedPlate] = useState<MenuItem | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const menuItems: MenuItem[] = [
@@ -60,12 +71,52 @@ const Index = () => {
 
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const placeOrder = () => {
-    toast({
-      title: "Заказ оформлен!",
-      description: `Сумма: ${totalPrice} ₽`,
-    });
-    setCart([]);
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch(funcUrls.orders);
+      const data = await response.json();
+      setOrders(data.orders || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'waiter') {
+      fetchOrders();
+      const interval = setInterval(fetchOrders, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [view]);
+
+  const placeOrder = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(funcUrls.orders, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart,
+          total: totalPrice
+        })
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Заказ оформлен!",
+          description: `Сумма: ${totalPrice} ₽`,
+        });
+        setCart([]);
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось оформить заказ",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (view === 'waiter') {
@@ -95,9 +146,35 @@ const Index = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b">
-                    <td className="py-3 px-4 text-muted-foreground" colSpan={5}>Пока нет заказов</td>
-                  </tr>
+                  {orders.length === 0 ? (
+                    <tr className="border-b">
+                      <td className="py-3 px-4 text-muted-foreground" colSpan={5}>Пока нет заказов</td>
+                    </tr>
+                  ) : (
+                    orders.map(order => (
+                      <tr key={order.id} className="border-b hover:bg-muted/50">
+                        <td className="py-3 px-4 font-medium">#{order.id}</td>
+                        <td className="py-3 px-4 text-sm">
+                          {new Date(order.created_at).toLocaleString('ru-RU')}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="space-y-1">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="text-sm">
+                                {item.name} x{item.quantity}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-semibold">{order.total} ₽</td>
+                        <td className="py-3 px-4">
+                          <Badge variant={order.status === 'новый' ? 'default' : 'secondary'}>
+                            {order.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -181,8 +258,9 @@ const Index = () => {
                           className="w-full" 
                           size="lg"
                           onClick={placeOrder}
+                          disabled={loading}
                         >
-                          Заказать
+                          {loading ? 'Оформление...' : 'Заказать'}
                         </Button>
                       </div>
                     </>
