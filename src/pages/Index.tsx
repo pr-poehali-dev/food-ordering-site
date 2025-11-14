@@ -112,7 +112,7 @@ const Index = () => {
       <header className="border-b bg-white shadow-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-primary">🍽️ Ресторан</h1>
+            <h1 className="text-2xl font-bold text-primary">🍽️ Столовка</h1>
             <p className="text-sm text-muted-foreground">Вкусно и быстро</p>
           </div>
           <div className="flex gap-2">
@@ -264,7 +264,7 @@ const Index = () => {
 
       <footer className="border-t bg-muted/30 py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2024 Ресторан. Приятного аппетита!</p>
+          <p>© 2024 Столовка. Приятного аппетита!</p>
         </div>
       </footer>
     </div>
